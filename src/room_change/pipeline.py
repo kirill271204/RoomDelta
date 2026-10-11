@@ -24,9 +24,11 @@ from .match import embed, match_objects
 from .navmap import (FREE, OCCUPIED, UNKNOWN, MapParams, astar, cost_map, grid_bounds, occupancy,
                      path_length, reachable, snap_to_free, update)
 from .objects import cluster_changes
+from .quality import assess
 from .scene import Scene
 
 N_VIEWS = 8   # crops per object used for appearance matching
+MERGE_GAP_M = 0.15  # a leftover piece this close to a moved object is part of it
 SNAP_M = 0.5  # a start/goal too close to obstacles moves to the nearest safe spot within this distance
 
 
@@ -74,20 +76,55 @@ def _box(o) -> dict:
             "bbox_max_m": o.bbox_max.round(3).tolist(), "size_m": o.size.round(3).tolist()}
 
 
-def _change_list(objects, crops, matches, out_dir: Path) -> list[dict]:
+def _absorb_fragments(objects, matches) -> tuple[dict, dict]:
+    """Merge unmatched pieces into the moved object next to them.
+
+    Occlusion can split one object into two clusters (e.g. a seat and its backrest); the larger piece
+    is matched as moved and the leftover would be reported as a separate removal or addition.
+    Returns (absorbed indices per kind, number of pieces merged into each owner per kind).
+    """
+    absorbed = {"removed": set(), "added": set()}
+    merged = {"removed": {}, "added": {}}
+    for kind in ("removed", "added"):
+        owners = [m.removed if kind == "removed" else m.added for m in matches]
+        for i, piece in enumerate(objects[kind]):
+            if i in owners or not owners:
+                continue
+            gap, j = min((objects[kind][j].gap_to(piece), j) for j in owners)
+            if gap <= MERGE_GAP_M:
+                objects[kind][j] = objects[kind][j].merged_with(piece)
+                absorbed[kind].add(i)
+                merged[kind][j] = merged[kind].get(j, 0) + 1
+    return absorbed, merged
+
+
+def _change_list(scene: Scene, frames_dir: Path, objects, crops, matches, out_dir: Path) -> list[dict]:
     """Merge matched removed/added pairs into 'moved' entries and save each object's crops."""
     (out_dir / "objects").mkdir(parents=True, exist_ok=True)
+    absorbed, merged = _absorb_fragments(objects, matches)
 
-    def save(kind, i, tag):
-        """The 3 best crops plus one context frame (whole view, object boxed)."""
+    def save_crops(cs, tag, name):
+        """The 3 best crops plus one context frame (whole view, region boxed)."""
+        if not cs:
+            return None
         paths = []
-        for j, c in enumerate(crops[kind][i][:3]):
-            path = out_dir / "objects" / f"{tag}_{kind}_view{j}.jpg"
+        for j, c in enumerate(cs[:3]):
+            path = out_dir / "objects" / f"{tag}_{name}_view{j}.jpg"
             c.image.save(path, quality=92)
             paths.append(str(path))
-        context = out_dir / "objects" / f"{tag}_{kind}_context.jpg"
-        crops[kind][i][0].context.save(context, quality=88)
+        context = out_dir / "objects" / f"{tag}_{name}_context.jpg"
+        cs[0].context.save(context, quality=88)
         return paths + [str(context)]
+
+    def save(kind, i, tag):
+        return save_crops(crops[kind][i], tag, kind)
+
+    def save_other_side(o, kind, tag):
+        """The same place in the other recording, so the visual check can see whether the object is
+        really absent there (an object that was there all along is not an addition)."""
+        other = 1 if kind == "removed" else 0
+        return save_crops(best_crops(scene, o, other, frames_dir, k=3, region_only=True), tag,
+                          "region_after" if kind == "removed" else "region_before")
 
     changes, used = [], {"removed": set(), "added": set()}
     for m in matches:
@@ -99,6 +136,7 @@ def _change_list(objects, crops, matches, out_dir: Path) -> list[dict]:
             "distance_on_floor_m": round(float(np.linalg.norm(d[:2])), 3),
             "height_change_m": round(float(d[2]), 3),
             "match": {"appearance": round(m.appearance, 3), "size": round(m.size, 3), "score": round(m.score, 3)},
+            "pieces_merged": merged["removed"].get(m.removed, 0) + merged["added"].get(m.added, 0),
             "crops_before": save("removed", m.removed, tag), "crops_after": save("added", m.added, tag),
             "_objects": (r, a),
         })
@@ -106,16 +144,20 @@ def _change_list(objects, crops, matches, out_dir: Path) -> list[dict]:
         used["added"].add(m.added)
     for kind in ("removed", "added"):
         for i, o in enumerate(objects[kind]):
-            if i in used[kind]:
+            if i in used[kind] or i in absorbed[kind]:
                 continue
             tag = f"change{len(changes) + 1:02d}"
-            changes.append({"id": tag, "type": kind, ("from" if kind == "removed" else "to"): _box(o),
-                            f"crops_{'before' if kind == 'removed' else 'after'}": save(kind, i, tag),
-                            "_objects": (o,)})
+            own, other = ("crops_before", "crops_after") if kind == "removed" else ("crops_after", "crops_before")
+            entry = {"id": tag, "type": kind, ("from" if kind == "removed" else "to"): _box(o),
+                     own: save(kind, i, tag), "_objects": (o,)}
+            region = save_other_side(o, kind, tag)
+            if region:
+                entry[other] = region
+            changes.append(entry)
     return changes
 
 
-def step_detect(scene: Scene, frames_dir: Path, out_dir: Path) -> list[dict]:
+def step_detect(scene: Scene, frames_dir: Path, out_dir: Path):
     results, objects, crops, emb = [], {}, {}, {}
     for source, kind in ((0, "removed"), (1, "added")):
         labels = detect(scene, source)
@@ -125,8 +167,12 @@ def step_detect(scene: Scene, frames_dir: Path, out_dir: Path) -> list[dict]:
         results.append((kind, labels, objects[kind]))
         print(f"[detect] {scene.video_names[source]} points: {summary(labels)}")
 
+    quality = assess(scene, [labels for _, labels, _ in results])
+    (out_dir / "quality.json").write_text(json.dumps(quality, indent=2) + "\n")
+    print_quality(quality)
+
     matches, _ = match_objects(objects["removed"], objects["added"], emb["removed"], emb["added"])
-    changes = _change_list(objects, crops, matches, out_dir)
+    changes = _change_list(scene, frames_dir, objects, crops, matches, out_dir)
     for ch in changes:
         if ch["type"] == "moved":
             print(f"[detect] {ch['id']} MOVED {ch['distance_on_floor_m']:.2f} m "
@@ -136,12 +182,42 @@ def step_detect(scene: Scene, frames_dir: Path, out_dir: Path) -> list[dict]:
             print(f"[detect] {ch['id']} {ch['type'].upper()} at {np.round(box['centre_m'], 2).tolist()} m, "
                   f"size {np.round(box['size_m'], 2).tolist()} m")
 
-    viz.changes_topdown(results, changes, scene.video_names, out_dir / "changes_topdown.png")
+    viz.changes_topdown(results, changes, scene.video_names, out_dir / "changes_topdown.png", quality["verdict"])
     viz.changes_rrd(results, changes, scene.video_names, out_dir / "changes.rrd")
     record = {"before": scene.video_names[0], "after": scene.video_names[1], "units": "metres, floor at z = 0, z up",
+              "reconstruction_quality": {k: quality[k] for k in ("verdict", "warnings", "advice")},
               "changes": [{k: v for k, v in ch.items() if not k.startswith("_")} for ch in changes]}
     (out_dir / "changes.json").write_text(json.dumps(record, indent=2) + "\n")
-    return changes
+    return changes, quality, results
+
+
+def reviewed(geometry: list[dict], described: dict) -> list[dict]:
+    """The geometric changes as confirmed by the visual check: rejected ones dropped, and moves the
+    check split apart drawn as a removal and an addition (ids as in changes_described.json)."""
+    final = {c["id"]: c for c in described["changes"]}
+    out = []
+    for ch in geometry:
+        cid, kept = ch["id"], final.get(ch["id"])
+        if ch["type"] != "moved" or (kept and kept["type"] == "moved"):
+            if kept:
+                out.append(ch)
+            continue
+        removed_obj, added_obj = ch["_objects"]
+        if kept:  # the removed half kept the id
+            out.append({**ch, "type": "removed", "_objects": (removed_obj,)})
+        if cid + "b" in final:
+            out.append({**ch, "id": cid + "b", "type": "added", "_objects": (added_obj,)})
+    return out
+
+
+def print_quality(quality: dict) -> None:
+    if quality["verdict"] == "good":
+        print("[quality] reconstruction looks GOOD")
+        return
+    print(f"[quality] reconstruction is {quality['verdict'].upper()}:")
+    for w in quality["warnings"]:
+        print(f"[quality]   * {w}")
+    print(f"[quality]   {quality['advice']}")
 
 
 def step_describe(out_dir: Path) -> Path | None:
@@ -158,6 +234,8 @@ def step_describe(out_dir: Path) -> Path | None:
     out.write_text(json.dumps(record, indent=2) + "\n")
     for ch in record["changes"]:
         print(f"[describe] {ch['id']:10s} {ch['type'].upper():8s} {ch['object_label']}: {ch['description']}")
+    for ch in record["rejected"]:
+        print(f"[describe] rejected {ch['id']}: {ch['real_change_reason']}")
     print(f"[describe] summary: {record['summary']}")
     return out
 
@@ -259,14 +337,21 @@ def run(before: Path, after: Path, out_dir: Path, opt: Options) -> None:
     print(f"[scale] floor levelled; camera height {opt.camera_height_m} m -> {scale:.3f} m per VGGT unit")
     viz.scene_rrd(scene, out_dir / "scene.rrd")
 
-    changes = step_detect(scene, frames_dir, out_dir)
+    changes, quality, results = step_detect(scene, frames_dir, out_dir)
     described = step_describe(out_dir) if opt.describe else None
     if described is not None:
-        changes = json.loads(described.read_text())["changes"]
+        record = json.loads(described.read_text())
+        # Redraw so the figures show only what the visual check confirmed
+        confirmed = reviewed(changes, record)
+        viz.changes_topdown(results, confirmed, scene.video_names, out_dir / "changes_topdown.png", quality["verdict"])
+        viz.changes_rrd(results, confirmed, scene.video_names, out_dir / "changes.rrd")
+        changes = record["changes"]
     step_navigation(scene, opt, changes, out_dir)
 
     (out_dir / "run_settings.json").write_text(json.dumps({
         "before": str(before), "after": str(after), "reconstruction": str(npz),
         "frames_per_video": opt.frames_per_video, "camera_height_m": opt.camera_height_m,
         "robot_radius_m": opt.robot_radius_m, "goal": opt.goal, "goal_name": opt.goal_name}, indent=2) + "\n")
-    print(f"\nDone. Results in {out_dir}/ ; 3D views: uv run rerun {out_dir}/scene.rrd {out_dir}/changes.rrd")
+    print()
+    print_quality(quality)
+    print(f"Done. Results in {out_dir}/ ; 3D views: uv run rerun {out_dir}/scene.rrd {out_dir}/changes.rrd")

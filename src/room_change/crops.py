@@ -37,11 +37,16 @@ def _to_original(scene: Scene, frames_dir: Path, i: int):
 
 
 def best_crops(scene: Scene, obj: ChangeObject, video: int, frames_dir: Path, k: int = 3,
-               tol: float = 0.08, pad: float = 0.15, sample: int = 20000, seed: int = 0) -> list[Crop]:
+               tol: float = 0.08, pad: float = 0.15, sample: int = 20000, seed: int = 0,
+               region_only: bool = False) -> list[Crop]:
     """Top-k crops of `obj` from frames of `video`, ranked by how many of its points are visible.
 
     A point counts as visible in a frame only if the frame's depth at that pixel agrees with the
     point's depth, so frames where the object is hidden behind something else are not chosen.
+
+    region_only: crop the place where the object is, from a recording where it may be absent
+    (the other recording of an added or removed object). A point then counts as visible when
+    nothing stands in front of it, whether or not a surface is there.
     """
     rng = np.random.default_rng(seed)
     pts = obj.points if len(obj.points) <= sample else obj.points[rng.choice(len(obj.points), sample, replace=False)]
@@ -55,7 +60,11 @@ def best_crops(scene: Scene, obj: ChangeObject, video: int, frames_dir: Path, k:
         u, v = np.round(uv).astype(int).T
         inside = (u >= 0) & (u < w) & (v >= 0) & (v < h)
         u, v, zf = u[inside], v[inside], z[front][inside]
-        vis = scene.valid[v, u] & (np.abs(scene.depth[i, v, u] - zf) < tol + 0.04 * zf)
+        margin = tol + 0.04 * zf
+        if region_only:
+            vis = scene.valid[v, u] & (scene.depth[i, v, u] > zf - margin)  # in view, not hidden
+        else:
+            vis = scene.valid[v, u] & (np.abs(scene.depth[i, v, u] - zf) < margin)  # surface is there
         if vis.sum() >= 50:
             scored.append((int(vis.sum()), i, u[vis], v[vis]))
 

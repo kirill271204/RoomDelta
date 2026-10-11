@@ -43,6 +43,12 @@ cp .env.example .env            # then put your key in .env
 
 Works best for a room sized space with some texture (furniture, objects on surfaces). Plain white walls alone give VGGT little to work with.
 
+The pipeline only needs about 1024 pixels on the long side. Phone clips in 4K at 60 fps are large and slow to upload to Colab, so shrinking them first saves a lot of time (use the shrunk files for every later step, so the frames match):
+
+```bash
+ffmpeg -i before.MOV -vf "scale='if(gt(iw,ih),1024,-2)':'if(gt(iw,ih),-2,1024)',fps=15" -an before_small.mp4
+```
+
 ## Run
 
 ```bash
@@ -66,7 +72,8 @@ A good way to choose `--goal`: run once without it, read the coordinates off `na
 
 | File | Contents |
 | :--- | :--- |
-| `changes_described.json` | The change list with labels, descriptions and a summary for the robot |
+| `changes_described.json` | The confirmed changes with labels, descriptions and a summary for the robot, plus the detections the visual check `rejected` and why |
+| `quality.json` | Whether the 3D reconstruction can be trusted, with the measurements behind the verdict |
 | `changes.json` | The change list from geometry alone: type, position, size, distance moved, match scores |
 | `changes_topdown.png` | Top view of both recordings: removed (red), added (green), moved (purple arrows) |
 | `navmap.png` | Robot map before and after, route, newly blocked and cut off floor |
@@ -82,16 +89,22 @@ Coordinates are in metres, with the floor at z = 0, z pointing up, and the start
 1. **Frames.** From each video, the sharpest frame in each of N equal time windows (motion blur is skipped, coverage is kept).
 2. **One shared 3D model.** All frames of *both* videos go through [VGGT](https://github.com/facebookresearch/vggt) in a single pass. Everything that did not change anchors both recordings in the same coordinate frame, so no separate alignment step is needed.
 3. **Level and scale.** The floor is found with RANSAC and becomes z = 0. VGGT has no real world scale, so the scene is scaled from the assumed phone height (about 10% accuracy, enough for thresholds in metres).
-4. **Change detection that knows what it did not see.** Every 3D point from one recording is projected into every camera of the other and compared with the depth that camera measured there:
+4. **Quality check.** When VGGT misplaces cameras, the recordings do not line up and walls start to look changed. Four measurements catch this (points that disagree with their own recording, points that match the other recording, camera jumps between frames, and spacing between frames). The run is rated good, questionable or unreliable, and a poor rating is printed, written to `quality.json`, shown on the figures and passed to the summary.
+5. **Change detection that knows what it did not see.** Every 3D point from one recording is projected into every camera of the other and compared with the depth that camera measured there:
    * same depth: the surface is still there (**unchanged**)
    * the camera saw *through* the point to something behind it: the object is gone (**changed**)
    * something was in front, or the spot was never in view: no evidence either way (**unknown**)
 
    A point is only called changed when the other recording actually looked at that spot and saw empty space. Points that are not confirmed by other frames of their own video (a hand in front of the lens, depth noise at edges) are dropped as **transient**.
-5. **Objects.** Changed points are clustered into objects (DBSCAN); specks, thin lines and thin sheets below the depth tolerance are dropped.
-6. **Moved, or added and removed?** Each object is cut out of the frames that see it best, with the background masked out. Appearance (DINOv2 features, best match over all pairs of views, so an object seen from behind in one video still matches its side view in the other) and 3D size decide an optimal one to one pairing. A pair becomes **moved**, with distance and height change.
-7. **Descriptions.** Claude looks at the crops of each change and returns a label, a description, a check that a moved pair really is the same object, and anything the clustering merged, such as a bag put down on a chair.
-8. **Robot map.** Each recording becomes a floor map with three states: free, occupied (10 cm to 1.5 m high) and never observed. The robot keeps its old map and overwrites only the cells the second recording observed. It then reports newly blocked floor, floor that is still free but now cut off, and an A* route to an optional goal.
+6. **Objects.** Changed points are clustered into objects (DBSCAN); specks, thin lines and thin sheets below the depth tolerance are dropped. Small clusters, such as a box on a far counter, are kept only on strong evidence: most of the cameras that looked at the spot must have seen through it.
+7. **Moved, or added and removed?** Each object is cut out of the frames that see it best, with the background masked out. Appearance (DINOv2 features, best match over all pairs of views, so an object seen from behind in one video still matches its side view in the other) and 3D size decide an optimal one to one pairing. A pair becomes **moved**, with distance and height change. When occlusion splits one object into two clusters, the leftover piece next to a moved object is merged into it.
+8. **Visual check and descriptions.** Claude sees each change from both recordings: the object, and the same place in the other recording. It returns a label and a description, and three checks the geometry cannot do alone:
+   * **real change:** is a distinct object present in one recording and absent in the other? A spot seen from a new angle, a door edge or a bare wall is rejected (kept in the output with the reason).
+   * **same object:** for a move, how likely the two crops show the same object. Unlikely pairs are split into a removal and an addition.
+   * **merged objects:** anything the clustering joined, such as a bag put down on a chair.
+
+   The figures are redrawn afterwards, so they show only confirmed changes.
+9. **Robot map.** Each recording becomes a floor map with three states: free, occupied (10 cm to 1.5 m high) and never observed. The robot keeps its old map and overwrites only the cells the second recording observed. It then reports newly blocked floor, floor that is still free but now cut off, and an A* route to an optional goal.
 
 ## Hardware
 
@@ -112,7 +125,7 @@ uv run python run.py before.mov after.mov --reconstruction vggt_30f.npz
 
 ## Example
 
-[`examples/bedroom/`](examples/bedroom/) holds two recordings of a bedroom, the [answer key](examples/bedroom/input/ground_truth.json) and the [full output](examples/bedroom/output/). Between the recordings two chairs were moved, a backpack was put on one of them, and a bin was moved from the floor onto the bed. The system finds all four, with no false alarms:
+[`examples/bedroom/`](examples/bedroom/) holds two recordings of a bedroom, the [answer key](examples/bedroom/input/ground_truth.json) and the [full output](examples/bedroom/output/). Between the recordings two chairs were moved, a backpack was put on one of them, and a bin was moved from the floor onto the bed. The system finds all four:
 
 | Detected | Claude's description (shortened) | Answer key |
 | :--- | :--- | :--- |
@@ -120,6 +133,8 @@ uv run python run.py before.mov after.mov --reconstruction vggt_30f.npz
 | MOVED 0.82 m | blue chair, from under the desk to the open floor near the bed | blue chair moved ✅ |
 | ADDED | dark navy backpack, now on the blue chair's seat | backpack added ✅ |
 | MOVED 2.06 m, 0.5 m higher | grey wastebasket, from the floor by the shelf to the top of the bed | bin moved ✅ |
+
+The geometry also flagged caps on a shelf seen from a new angle. The visual check rejected it ("the same caps show up on the shelf in both recordings, so they were there all along"), and it is listed under `rejected` instead of as a change.
 
 ![Changes found in the example](examples/bedroom/output/changes_topdown.png)
 
@@ -133,7 +148,12 @@ To run it yourself:
 uv run python run.py examples/bedroom/input/before.mp4 examples/bedroom/input/after.mp4 --goal 0.3 2.2 --goal-name desk
 ```
 
-The shipped output was made from the full resolution recordings with a Colab reconstruction at 30 frames per video; the input videos here are smaller 720p copies of those. With only 15 frames per video (a 16 GB Mac) both chairs are still found but the bin on the bed is missed.
+The shipped output was made from the full resolution recordings with a Colab reconstruction at 30 frames per video; the input videos here are smaller 720p copies of those. In an earlier test with only 15 frames per video (a 16 GB Mac), both chairs were still found but the bin on the bed was missed.
+
+**Other tests** (recordings not included):
+
+* **Kitchen and dining area:** a baby seat moved to the kitchen counter, a vase of flowers moved along the table, and a small caddy with an oil bottle moved along the counter. All three found, nothing else reported.
+* **A 12 m hallway with identical white doors:** VGGT misplaced cameras (jumps of 10 m between frames) and the change list was mostly door edges and frames. This failure is why the quality check exists: its thresholds were set between this run and the bedroom, and this run's measurements fail all four of them.
 
 ## Limitations
 
@@ -141,7 +161,7 @@ The shipped output was made from the full resolution recordings with a Colab rec
 * **Touching objects** form one cluster in 3D (for example a bag on a chair). The visual check reports them as separate changes, but they share one 3D box.
 * **Coverage** decides what can be judged: anything only one recording saw is reported as unknown, not as a change.
 * **Thin or small objects** (under about 5 cm thick, or seen in very few frames) are below what VGGT depth can reliably separate from noise.
-* **Scenes** much larger than a room need more frames than fit in one VGGT pass.
+* **Large or repetitive spaces** (long corridors, rows of identical doors) can defeat VGGT within the frames that fit in one pass. The quality check flags this, but cannot fix it: record a smaller area.
 
 ## Repository layout
 
@@ -153,6 +173,7 @@ src/room_change/
   reconstruct.py           VGGT on CUDA, Apple Silicon or CPU
   scene.py                 posed depth maps and point clouds
   align.py                 floor levelling and scale
+  quality.py               is the reconstruction trustworthy?
   changes.py               visibility aware change detection
   objects.py               clustering changed points into objects
   crops.py                 best views and masks of each object

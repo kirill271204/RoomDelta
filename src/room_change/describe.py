@@ -2,13 +2,17 @@
 
 Geometry decides WHERE something changed; Claude only looks at the crops of
 those places. For each change it returns an object label, room relative
-locations, a one sentence description, and two checks the geometry cannot do
+locations, a one sentence description, and three checks the geometry cannot do
 on its own:
 
-* same_object: for a "moved" pair, is it really the same physical object?
-  A confident "no" splits the pair back into "removed" + "added".
+* real_change: is there an actual object that changed, or did the geometry flag
+  a bare wall, a door edge seen from another angle, or reconstruction noise?
+  Rejected detections are kept in the output under "rejected", with the reason.
+* same_object_probability: for a "moved" pair, how likely is it the same physical
+  object? Below 0.5 the pair is split into "removed" + "added", and each half is
+  described on its own.
 * other_changes: changes visible in the crops that clustering merged into the
-  main object (e.g. a backpack now resting on a chair).
+  main object (e.g. a bag now resting on a chair).
 """
 
 import base64
@@ -32,7 +36,10 @@ SYSTEM = (
     "The 3D detector cannot separate objects that touch, so check the crops yourself: if an object "
     "is on, in or against the main object in one recording but absent in the other (for example a "
     "bag now resting on a chair), list it in other_changes, even if you also mention it in the "
-    "description. Call the report_change tool exactly once."
+    "description. For an ADDED or REMOVED change you also see the same place in the other recording: "
+    "real_change is true only if a distinct object is present in one recording and absent in the "
+    "other; if it is visible in both, it was there all along and real_change is false. "
+    "Call the report_change tool exactly once."
 )
 
 TOOL = {
@@ -42,8 +49,9 @@ TOOL = {
         "type": "object",
         "properties": {
             "object_label": {"type": "string", "description": "Short noun phrase, e.g. 'black office chair'."},
-            "same_object": {"type": "boolean", "description": "Moved changes only: are BEFORE and AFTER the same physical object? true for other types."},
-            "same_object_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "real_change": {"type": "boolean", "description": "true if a distinct object was moved, added or removed; false if the region is only bare wall, floor, a door or frame seen from a different angle, or reconstruction noise."},
+            "real_change_reason": {"type": "string", "description": "One short sentence justifying real_change."},
+            "same_object_probability": {"type": "number", "minimum": 0, "maximum": 1, "description": "MOVED changes only: probability that the BEFORE and AFTER crops show the same physical object (0 = clearly different objects, 1 = clearly the same). Use 1 for added or removed changes."},
             "location_before": {"type": "string", "description": "Where it was, relative to landmarks. Empty if added."},
             "location_after": {"type": "string", "description": "Where it is now, relative to landmarks. Empty if removed."},
             "other_changes": {
@@ -61,8 +69,8 @@ TOOL = {
             },
             "description": {"type": "string", "description": "One plain factual sentence: what changed and where."},
         },
-        "required": ["object_label", "same_object", "same_object_confidence", "location_before",
-                     "location_after", "other_changes", "description"],
+        "required": ["object_label", "real_change", "real_change_reason", "same_object_probability",
+                     "location_before", "location_after", "other_changes", "description"],
     },
 }
 
@@ -88,7 +96,7 @@ def describe_change(client: anthropic.Anthropic, change: dict) -> dict:
         if key not in change:
             continue
         *crops, context = change[key]
-        content.append({"type": "text", "text": f"{side} recording: close-up crops of the region"})
+        content.append({"type": "text", "text": f"{side} recording: close-up crops of the region (same 3D place in both recordings)"})
         content += [_image_block(p) for p in crops]
         content.append({"type": "text", "text": f"{side} recording: whole frame, region boxed in magenta"})
         content.append(_image_block(context))
@@ -104,13 +112,17 @@ def describe_change(client: anthropic.Anthropic, change: dict) -> dict:
     raise RuntimeError(f"Claude did not call {TOOL['name']} for {change['id']} (stop_reason={resp.stop_reason})")
 
 
-def summarize(client: anthropic.Anthropic, changes: list[dict]) -> str:
+def summarize(client: anthropic.Anthropic, changes: list[dict], quality: dict | None = None) -> str:
     lines = [f"- {c['type']}: {c['description']}" for c in changes]
+    caveat = ""
+    if quality and quality.get("verdict") != "good":
+        caveat = (f"\n\nThe 3D reconstruction was rated {quality['verdict']}: " + "; ".join(quality["warnings"])
+                  + ". Say so in the first sentence and keep the claims cautious.")
     resp = client.messages.create(
         model=MODEL, max_tokens=4096,  # the model thinks first; thinking counts toward max_tokens
         messages=[{"role": "user", "content": (
             "These changes were detected between two recordings of a room:\n" + "\n".join(lines)
-            + "\n\nWrite a 2 to 3 sentence summary for a mobile robot, ending with what matters for "
+            + caveat + "\n\nWrite a 2 to 3 sentence summary for a mobile robot, ending with what matters for "
               "navigating the room. Plain prose, no lists, no dashes.")}],
     )
     text = "".join(b.text for b in resp.content if b.type == "text").strip()
@@ -119,30 +131,42 @@ def summarize(client: anthropic.Anthropic, changes: list[dict]) -> str:
     return text
 
 
-def describe_all(changes_json: Path, min_split_confidence: float = 0.6) -> dict:
-    """Describe every change in changes.json; returns the enriched record (also suitable to save)."""
+def _split(change: dict) -> tuple[dict, dict]:
+    """A rejected 'moved' pair as separate 'removed' and 'added' changes."""
+    pair_only = ("distance_on_floor_m", "height_change_m", "match")
+    removed = {k: v for k, v in change.items() if k not in ("to", "crops_after", *pair_only)}
+    added = {k: v for k, v in change.items() if k not in ("from", "crops_before", *pair_only)}
+    note = "visual check: the matched BEFORE and AFTER objects are different, so the move was split"
+    return ({**removed, "type": "removed", "note": note}, {**added, "id": change["id"] + "b", "type": "added", "note": note})
+
+
+def describe_all(changes_json: Path, min_same_probability: float = 0.5) -> dict:
+    """Describe and check every change in changes.json; returns the enriched record."""
     record = json.loads(changes_json.read_text())
     # Reads ANTHROPIC_API_KEY. Keys not scoped to a workspace also need the workspace to bill.
     workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
     client = anthropic.Anthropic(default_headers={"anthropic-workspace-id": workspace} if workspace else None)
-    out = []
-    for ch in record["changes"]:
-        d = describe_change(client, ch)
-        if ch["type"] == "moved" and not d["same_object"] and d["same_object_confidence"] >= min_split_confidence:
-            # Claude is confident these are different objects: report removed + added instead of a move
-            out.append({**{k: v for k, v in ch.items() if k not in ("to", "crops_after", "distance_on_floor_m",
-                                                                   "height_change_m", "match")},
-                        "type": "removed", "note": "pair rejected by visual check", **d})
-            out.append({**{k: v for k, v in ch.items() if k not in ("from", "crops_before", "distance_on_floor_m",
-                                                                   "height_change_m", "match")},
-                        "id": ch["id"] + "b", "type": "added", "note": "pair rejected by visual check", **d})
-            continue
+    out, rejected = [], []
+
+    def keep(ch: dict, d: dict) -> None:
+        if not d["real_change"]:
+            rejected.append({**ch, **d})
+            return
         out.append({**ch, **d})
         for j, extra in enumerate(d["other_changes"]):
             where = ch.get("to" if extra["type"] == "added" else "from")
             out.append({"id": f"{ch['id']}.{j + 1}", "type": extra["type"], "object_label": extra["object_label"],
                         "description": extra["note"], ("to" if extra["type"] == "added" else "from"): where,
                         "note": f"found by the visual check inside {ch['id']}; shares its 3D location"})
+
+    for ch in record["changes"]:
+        d = describe_change(client, ch)
+        if ch["type"] == "moved" and d["real_change"] and d["same_object_probability"] < min_same_probability:
+            for half in _split(ch):  # each half gets its own label and its own real change check
+                keep(half, describe_change(client, half))
+        else:
+            keep(ch, d)
     record["changes"] = out
-    record["summary"] = summarize(client, out)
+    record["rejected"] = rejected
+    record["summary"] = summarize(client, out, record.get("reconstruction_quality")) if out else "No changes were confirmed."
     return record

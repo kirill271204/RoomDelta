@@ -2,6 +2,11 @@
   "before": "IMG_1763",
   "after": "IMG_1765",
   "units": "metres, floor at z = 0, z up",
+  "reconstruction_quality": {
+    "verdict": "good",
+    "warnings": [],
+    "advice": null
+  },
   "changes": [
     {
       "id": "change01",
@@ -57,6 +62,7 @@
         "size": 0.754,
         "score": 0.603
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change01_removed_view0.jpg",
         "examples/bedroom/output/objects/change01_removed_view1.jpg",
@@ -124,6 +130,7 @@
         "size": 0.709,
         "score": 0.702
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change02_removed_view0.jpg",
         "examples/bedroom/output/objects/change02_removed_view1.jpg",
@@ -191,6 +198,7 @@
         "size": 0.804,
         "score": 0.67
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change03_removed_view0.jpg",
         "examples/bedroom/output/objects/change03_removed_view1.jpg",
@@ -202,6 +210,44 @@
         "examples/bedroom/output/objects/change03_added_view1.jpg",
         "examples/bedroom/output/objects/change03_added_view2.jpg",
         "examples/bedroom/output/objects/change03_added_context.jpg"
+      ]
+    },
+    {
+      "id": "change04",
+      "type": "added",
+      "to": {
+        "centre_m": [
+          0.9409999847412109,
+          0.08299999684095383,
+          1.5269999504089355
+        ],
+        "bbox_min_m": [
+          0.7799999713897705,
+          -0.024000000208616257,
+          1.465000033378601
+        ],
+        "bbox_max_m": [
+          1.097000002861023,
+          0.1550000011920929,
+          1.6019999980926514
+        ],
+        "size_m": [
+          0.3160000145435333,
+          0.17800000309944153,
+          0.1379999965429306
+        ]
+      },
+      "crops_after": [
+        "examples/bedroom/output/objects/change04_added_view0.jpg",
+        "examples/bedroom/output/objects/change04_added_view1.jpg",
+        "examples/bedroom/output/objects/change04_added_view2.jpg",
+        "examples/bedroom/output/objects/change04_added_context.jpg"
+      ],
+      "crops_before": [
+        "examples/bedroom/output/objects/change04_region_before_view0.jpg",
+        "examples/bedroom/output/objects/change04_region_before_view1.jpg",
+        "examples/bedroom/output/objects/change04_region_before_view2.jpg",
+        "examples/bedroom/output/objects/change04_region_before_context.jpg"
       ]
     }
   ]

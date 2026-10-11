@@ -2,6 +2,11 @@
   "before": "IMG_1763",
   "after": "IMG_1765",
   "units": "metres, floor at z = 0, z up",
+  "reconstruction_quality": {
+    "verdict": "good",
+    "warnings": [],
+    "advice": null
+  },
   "changes": [
     {
       "id": "change01",
@@ -57,6 +62,7 @@
         "size": 0.754,
         "score": 0.603
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change01_removed_view0.jpg",
         "examples/bedroom/output/objects/change01_removed_view1.jpg",
@@ -70,12 +76,13 @@
         "examples/bedroom/output/objects/change01_added_context.jpg"
       ],
       "object_label": "dark purple gaming chair",
-      "same_object": true,
-      "same_object_confidence": 0.9,
-      "location_before": "At the white desk under the window, facing the desk",
-      "location_after": "In the corner by the white door, beside the tall white wardrobe, facing into the room",
+      "real_change": true,
+      "real_change_reason": "The same dark fabric gaming chair stands at the desk under the window in BEFORE and next to the white wardrobes near the door in AFTER.",
+      "same_object_probability": 0.92,
+      "location_before": "At the white desk under the window, facing the desk, between the blue chair and the bed",
+      "location_after": "In the corner beside the tall white wardrobes, next to the white door",
       "other_changes": [],
-      "description": "The dark purple fabric gaming chair moved about 1.8 m, from the desk under the window to the corner next to the white door and the tall white wardrobe."
+      "description": "The dark purple gaming chair moved about 1.8 m, from the desk under the window to the corner next to the white wardrobes and the door."
     },
     {
       "id": "change02",
@@ -131,6 +138,7 @@
         "size": 0.709,
         "score": 0.702
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change02_removed_view0.jpg",
         "examples/bedroom/output/objects/change02_removed_view1.jpg",
@@ -144,24 +152,25 @@
         "examples/bedroom/output/objects/change02_added_context.jpg"
       ],
       "object_label": "blue perforated chair",
-      "same_object": true,
-      "same_object_confidence": 0.93,
-      "location_before": "Pushed in under the white desk in the wall-unit alcove, below the iMac, beside the black waste bin",
-      "location_after": "Out on the open floor about 0.8 m from the desk, near the edge of the white rug by the bed and in front of the black gaming chair",
+      "real_change": true,
+      "real_change_reason": "The same blue chair with metal legs was tucked under the desk before and now stands out in the room with a backpack on it.",
+      "same_object_probability": 0.93,
+      "location_before": "Tucked under the white built-in desk below the iMac, left of the black gaming chair",
+      "location_after": "In the open floor area about 0.8 m away, next to the sofa bed and rug, in front of the black gaming chair and the door",
       "other_changes": [
         {
           "object_label": "dark navy backpack",
           "type": "added",
-          "note": "Now sitting on the chair seat, leaning against the backrest. It was not on the chair in the BEFORE recording."
+          "note": "Lying on the chair seat in the AFTER recording; not on the chair in the BEFORE recording."
         }
       ],
-      "description": "The blue chair with holes in the backrest moved about 0.8 m from under the desk to the open floor near the bed and gaming chair, and a dark navy backpack now sits on its seat."
+      "description": "The blue perforated chair moved about 0.8 m from under the white desk out into the room near the sofa bed, and a dark navy backpack now lies on its seat."
     },
     {
       "id": "change02.1",
       "type": "added",
       "object_label": "dark navy backpack",
-      "description": "Now sitting on the chair seat, leaning against the backrest. It was not on the chair in the BEFORE recording.",
+      "description": "Lying on the chair seat in the AFTER recording; not on the chair in the BEFORE recording.",
       "to": {
         "centre_m": [
           -0.22699999809265137,
@@ -240,6 +249,7 @@
         "size": 0.804,
         "score": 0.67
       },
+      "pieces_merged": 0,
       "crops_before": [
         "examples/bedroom/output/objects/change03_removed_view0.jpg",
         "examples/bedroom/output/objects/change03_removed_view1.jpg",
@@ -252,14 +262,63 @@
         "examples/bedroom/output/objects/change03_added_view2.jpg",
         "examples/bedroom/output/objects/change03_added_context.jpg"
       ],
-      "object_label": "grey wastebasket with white plastic bag",
-      "same_object": true,
-      "same_object_confidence": 0.85,
-      "location_before": "On the floor between the white shelving unit and the door",
-      "location_after": "On top of the green-covered bed, near the middle of the mattress against the wall",
+      "object_label": "small grey waste bin with white plastic bag",
+      "real_change": true,
+      "real_change_reason": "In BEFORE the bin is on the floor next to the shelving unit, and in AFTER the same bin sits on the bed.",
+      "same_object_probability": 0.9,
+      "location_before": "On the floor between the white shelving unit and the door, next to the black bags under the shelves",
+      "location_after": "On top of the green-covered bed/sofa, near the back rest against the wall",
       "other_changes": [],
-      "description": "The small grey wastebasket lined with a white plastic bag with red printing moved about 2 m, from the floor beside the shelving unit next to the door to the top of the bed, and is now about 0.5 m higher."
+      "description": "The small grey waste bin lined with a white printed plastic bag was moved about 2 m, from the floor beside the shelving unit near the door to the top of the bed, about 0.5 m higher."
     }
   ],
-  "summary": "Since the last recording, the dark purple gaming chair has moved from the desk under the window to the corner by the white door and tall white wardrobe, and the blue chair with the perforated backrest has moved out from under the desk into the open floor near the bed, now holding a dark navy backpack. The small grey wastebasket with its white plastic liner has also been lifted from the floor beside the shelving unit by the door and placed on top of the bed. For navigation, the blue chair is now an obstacle in the open floor between the bed and the gaming chair, and the gaming chair may narrow the path near the door, while the space under the desk and the floor beside the shelving unit are now clear."
+  "rejected": [
+    {
+      "id": "change04",
+      "type": "added",
+      "to": {
+        "centre_m": [
+          0.9409999847412109,
+          0.08299999684095383,
+          1.5269999504089355
+        ],
+        "bbox_min_m": [
+          0.7799999713897705,
+          -0.024000000208616257,
+          1.465000033378601
+        ],
+        "bbox_max_m": [
+          1.097000002861023,
+          0.1550000011920929,
+          1.6019999980926514
+        ],
+        "size_m": [
+          0.3160000145435333,
+          0.17800000309944153,
+          0.1379999965429306
+        ]
+      },
+      "crops_after": [
+        "examples/bedroom/output/objects/change04_added_view0.jpg",
+        "examples/bedroom/output/objects/change04_added_view1.jpg",
+        "examples/bedroom/output/objects/change04_added_view2.jpg",
+        "examples/bedroom/output/objects/change04_added_context.jpg"
+      ],
+      "crops_before": [
+        "examples/bedroom/output/objects/change04_region_before_view0.jpg",
+        "examples/bedroom/output/objects/change04_region_before_view1.jpg",
+        "examples/bedroom/output/objects/change04_region_before_view2.jpg",
+        "examples/bedroom/output/objects/change04_region_before_context.jpg"
+      ],
+      "object_label": "baseball caps on shelf",
+      "real_change": false,
+      "real_change_reason": "The same caps show up on the white shelving unit's third shelf in both recordings, so they were there all along.",
+      "same_object_probability": 1,
+      "location_before": "On the third shelf of the white shelving unit, left of the door",
+      "location_after": "On the third shelf of the white shelving unit, left of the door",
+      "other_changes": [],
+      "description": "Caps, including a brown one, sit on the third shelf of the white shelving unit in both recordings, so nothing was added."
+    }
+  ],
+  "summary": "Two chairs have moved: the dark purple gaming chair went from the desk under the window to the corner beside the white wardrobes and the door, and the blue perforated chair went from under the white desk into the open room near the sofa bed, now holding a dark navy backpack on its seat. The small grey waste bin with a white printed liner was lifted from the floor beside the shelving unit near the door and now sits on top of the bed. For navigation, expect new floor obstacles at the corner by the wardrobes and door and in the open area near the sofa bed, while the floor beside the shelving unit is now clear and the space under the window desk is open."
 }

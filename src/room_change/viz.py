@@ -59,7 +59,7 @@ def scene_rrd(scene: Scene, out: Path, max_points: int = 400_000) -> None:
         rr.log(f"frames/{names[v]}/{i:02d}", rr.Image(scene.images[i]).compress(jpeg_quality=80), static=True)
 
 
-def changes_topdown(results, changes, names, out: Path) -> None:
+def changes_topdown(results, changes, names, out: Path, verdict: str = "good") -> None:
     """Before (removed) and after (added) point maps with change boxes and move arrows."""
     fig, axes = plt.subplots(1, 2, figsize=(16, 8))
     for ax, (kind, labels, _), name in zip(axes, results, names):
@@ -82,6 +82,9 @@ def changes_topdown(results, changes, names, out: Path) -> None:
         ax.set_title(f"{name}: {'BEFORE' if kind == 'removed' else 'AFTER'} | purple moved, red removed, green added\n"
                      "grey unchanged, blue not observed, yellow transient", fontsize=10)
         ax.set_xlabel("x (m)"), ax.set_ylabel("y (m)"), ax.set_aspect("equal"), ax.grid(True, alpha=0.3)
+    if verdict != "good":
+        fig.suptitle(f"Reconstruction quality: {verdict.upper()} (see quality.json); treat these changes with caution",
+                     color="#c0392b", fontsize=13, weight="bold")
     plt.tight_layout()
     plt.savefig(out, dpi=90)
     plt.close(fig)

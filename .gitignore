@@ -21,3 +21,6 @@ third_party/
 
 # the challenge brief itself is not ours to publish
 Instructions.png
+
+# test recordings (videos, reconstructions)
+data*/

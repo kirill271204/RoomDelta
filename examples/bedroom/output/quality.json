@@ -1,0 +1,19 @@
+{
+  "verdict": "good",
+  "warnings": [],
+  "advice": null,
+  "metrics": {
+    "IMG_1763": {
+      "transient_fraction": 0.011,
+      "unchanged_fraction": 0.895,
+      "largest_camera_jump_m": 0.71,
+      "median_camera_step_m": 0.3
+    },
+    "IMG_1765": {
+      "transient_fraction": 0.036,
+      "unchanged_fraction": 0.79,
+      "largest_camera_jump_m": 1.2,
+      "median_camera_step_m": 0.2
+    }
+  }
+}
