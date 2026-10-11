@@ -1,0 +1,216 @@
+{
+  "before": "before",
+  "after": "after",
+  "units": "metres, floor at z = 0, z up",
+  "reconstruction_quality": {
+    "verdict": "good",
+    "warnings": [],
+    "advice": null
+  },
+  "changes": [
+    {
+      "id": "change01",
+      "type": "moved",
+      "from": {
+        "centre_m": [
+          0.6980000138282776,
+          1.5049999952316284,
+          0.656000018119812
+        ],
+        "bbox_min_m": [
+          0.32899999618530273,
+          1.1619999408721924,
+          0.19900000095367432
+        ],
+        "bbox_max_m": [
+          1.0230000019073486,
+          1.7139999866485596,
+          0.9120000004768372
+        ],
+        "size_m": [
+          0.6940000057220459,
+          0.5519999861717224,
+          0.7129999995231628
+        ]
+      },
+      "to": {
+        "centre_m": [
+          0.09200000017881393,
+          2.4739999771118164,
+          0.5929999947547913
+        ],
+        "bbox_min_m": [
+          -0.1679999977350235,
+          2.194999933242798,
+          0.19900000095367432
+        ],
+        "bbox_max_m": [
+          0.3580000102519989,
+          2.7709999084472656,
+          0.8970000147819519
+        ],
+        "size_m": [
+          0.5249999761581421,
+          0.574999988079071,
+          0.6980000138282776
+        ]
+      },
+      "distance_on_floor_m": 1.143,
+      "height_change_m": -0.063,
+      "match": {
+        "appearance": 0.766,
+        "size": 0.94,
+        "score": 0.818
+      },
+      "pieces_merged": 1,
+      "crops_before": [
+        "examples/kitchen/output/objects/change01_removed_view0.jpg",
+        "examples/kitchen/output/objects/change01_removed_view1.jpg",
+        "examples/kitchen/output/objects/change01_removed_view2.jpg",
+        "examples/kitchen/output/objects/change01_removed_context.jpg"
+      ],
+      "crops_after": [
+        "examples/kitchen/output/objects/change01_added_view0.jpg",
+        "examples/kitchen/output/objects/change01_added_view1.jpg",
+        "examples/kitchen/output/objects/change01_added_view2.jpg",
+        "examples/kitchen/output/objects/change01_added_context.jpg"
+      ]
+    },
+    {
+      "id": "change02",
+      "type": "moved",
+      "from": {
+        "centre_m": [
+          1.906000018119812,
+          2.053999900817871,
+          0.9409999847412109
+        ],
+        "bbox_min_m": [
+          1.7999999523162842,
+          1.934000015258789,
+          0.7799999713897705
+        ],
+        "bbox_max_m": [
+          2.0429999828338623,
+          2.2130000591278076,
+          1.0570000410079956
+        ],
+        "size_m": [
+          0.24300000071525574,
+          0.27900001406669617,
+          0.27799999713897705
+        ]
+      },
+      "to": {
+        "centre_m": [
+          1.3220000267028809,
+          2.3380000591278076,
+          0.8659999966621399
+        ],
+        "bbox_min_m": [
+          1.031000018119812,
+          1.871999979019165,
+          0.7739999890327454
+        ],
+        "bbox_max_m": [
+          1.7580000162124634,
+          2.7339999675750732,
+          1.1050000190734863
+        ],
+        "size_m": [
+          0.7269999980926514,
+          0.8619999885559082,
+          0.3310000002384186
+        ]
+      },
+      "distance_on_floor_m": 0.65,
+      "height_change_m": -0.075,
+      "match": {
+        "appearance": 0.764,
+        "size": 0.479,
+        "score": 0.678
+      },
+      "pieces_merged": 0,
+      "crops_before": [
+        "examples/kitchen/output/objects/change02_removed_view0.jpg",
+        "examples/kitchen/output/objects/change02_removed_view1.jpg",
+        "examples/kitchen/output/objects/change02_removed_view2.jpg",
+        "examples/kitchen/output/objects/change02_removed_context.jpg"
+      ],
+      "crops_after": [
+        "examples/kitchen/output/objects/change02_added_view0.jpg",
+        "examples/kitchen/output/objects/change02_added_view1.jpg",
+        "examples/kitchen/output/objects/change02_added_view2.jpg",
+        "examples/kitchen/output/objects/change02_added_context.jpg"
+      ]
+    },
+    {
+      "id": "change03",
+      "type": "moved",
+      "from": {
+        "centre_m": [
+          0.7200000286102295,
+          3.489000082015991,
+          1.0299999713897705
+        ],
+        "bbox_min_m": [
+          0.6570000052452087,
+          3.4639999866485596,
+          0.9700000286102295
+        ],
+        "bbox_max_m": [
+          0.777999997138977,
+          3.509999990463257,
+          1.1100000143051147
+        ],
+        "size_m": [
+          0.12099999934434891,
+          0.04600000008940697,
+          0.14000000059604645
+        ]
+      },
+      "to": {
+        "centre_m": [
+          0.24300000071525574,
+          3.3540000915527344,
+          1.0149999856948853
+        ],
+        "bbox_min_m": [
+          0.16300000250339508,
+          3.313999891281128,
+          0.9490000009536743
+        ],
+        "bbox_max_m": [
+          0.34299999475479126,
+          3.4030001163482666,
+          1.1109999418258667
+        ],
+        "size_m": [
+          0.18000000715255737,
+          0.09000000357627869,
+          0.16200000047683716
+        ]
+      },
+      "distance_on_floor_m": 0.496,
+      "height_change_m": -0.015,
+      "match": {
+        "appearance": 0.709,
+        "size": 0.677,
+        "score": 0.699
+      },
+      "pieces_merged": 0,
+      "crops_before": [
+        "examples/kitchen/output/objects/change03_removed_view0.jpg",
+        "examples/kitchen/output/objects/change03_removed_view1.jpg",
+        "examples/kitchen/output/objects/change03_removed_view2.jpg",
+        "examples/kitchen/output/objects/change03_removed_context.jpg"
+      ],
+      "crops_after": [
+        "examples/kitchen/output/objects/change03_added_view0.jpg",
+        "examples/kitchen/output/objects/change03_added_view1.jpg",
+        "examples/kitchen/output/objects/change03_added_view2.jpg",
+        "examples/kitchen/output/objects/change03_added_context.jpg"
+      ]
+    }
+  ]
+}

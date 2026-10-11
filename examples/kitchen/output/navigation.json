@@ -1,0 +1,13 @@
+{
+  "start": [
+    -0.0,
+    -0.0
+  ],
+  "start_name": "start of 1st recording",
+  "robot_radius_m": 0.25,
+  "newly_blocked_floor_m2": 0.58,
+  "newly_free_floor_m2": 0.61,
+  "reachable_floor_before_m2": 1.36,
+  "reachable_floor_after_m2": 1.41,
+  "free_floor_cut_off_m2": 0.34
+}

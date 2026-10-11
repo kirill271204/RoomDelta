@@ -1,0 +1,25 @@
+{
+  "scene": "kitchen_and_dining_area",
+  "before": "before.mp4",
+  "after": "after.mp4",
+  "changes": [
+    {
+      "object": "baby seat",
+      "type": "moved",
+      "from": "not noted",
+      "to": "kitchen counter"
+    },
+    {
+      "object": "vase of flowers",
+      "type": "moved",
+      "from": "wall end of the dining table",
+      "to": "middle of the dining table"
+    },
+    {
+      "object": "small caddy with an oil bottle",
+      "type": "moved",
+      "from": "corner of the kitchen counter",
+      "to": "middle of the kitchen counter"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "before": "examples/kitchen/input/before.mp4",
+  "after": "examples/kitchen/input/after.mp4",
+  "reconstruction": "/private/tmp/claude-501/-Users-killwill27-Desktop-Claude-Code/63f399cc-e447-4159-98dd-8e14c25bfccb/scratchpad/kitchen_vggt_30f.npz",
+  "frames_per_video": 30,
+  "camera_height_m": 1.4,
+  "robot_radius_m": 0.25,
+  "goal": null,
+  "goal_name": "goal"
+}

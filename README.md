@@ -123,7 +123,11 @@ On a Mac the memory need is about 11 GB plus 0.23 GB per frame, and `run.py` war
 uv run python run.py before.mov after.mov --reconstruction vggt_30f.npz
 ```
 
-## Example
+## Examples
+
+Each example folder holds the two input videos, the answer key (`ground_truth.json`) and the full output.
+
+### Bedroom
 
 [`examples/bedroom/`](examples/bedroom/) holds two recordings of a bedroom, the [answer key](examples/bedroom/input/ground_truth.json) and the [full output](examples/bedroom/output/). Between the recordings two chairs were moved, a backpack was put on one of them, and a bin was moved from the floor onto the bed. The system finds all four:
 
@@ -150,10 +154,29 @@ uv run python run.py examples/bedroom/input/before.mp4 examples/bedroom/input/af
 
 The shipped output was made from the full resolution recordings with a Colab reconstruction at 30 frames per video; the input videos here are smaller 720p copies of those. In an earlier test with only 15 frames per video (a 16 GB Mac), both chairs were still found but the bin on the bed was missed.
 
-**Other tests** (recordings not included):
+### Kitchen and dining area
 
-* **Kitchen and dining area:** a baby seat moved to the kitchen counter, a vase of flowers moved along the table, and a small caddy with an oil bottle moved along the counter. All three found, nothing else reported.
-* **A 12 m hallway with identical white doors:** VGGT misplaced cameras (jumps of 10 m between frames) and the change list was mostly door edges and frames. This failure is why the quality check exists: its thresholds were set between this run and the bedroom, and this run's measurements fail all four of them.
+[`examples/kitchen/`](examples/kitchen/): a baby seat was moved to the kitchen counter, a vase of flowers along the dining table, and a small caddy with an oil bottle from the corner of the counter to its middle. All three are found and nothing else is reported:
+
+| Detected | Claude's description (shortened) | Answer key |
+| :--- | :--- | :--- |
+| MOVED 1.14 m | grey baby high chair, to in front of the kitchen sink cabinets | baby seat moved ✅ |
+| MOVED 0.65 m | glass vase of white roses, from the wall end of the table toward its middle | flowers moved ✅ |
+| MOVED 0.50 m | dark wooden pepper mill, along the back of the kitchen counter | caddy with oil moved ✅ |
+
+Two things this scene needed that the bedroom did not. The caddy sits on a counter at the back, seen only from a distance, so it gives few 3D points and is kept by the strong evidence rule for small objects. The baby seat was split by occlusion into two clusters, and the leftover piece is merged into the move instead of being reported as a separate removal. Claude names the caddy by the pepper mill standing in it.
+
+![Changes found in the kitchen example](examples/kitchen/output/changes_topdown.png)
+
+The input videos are the 1024 pixel, 15 fps copies that the Colab reconstruction was made from:
+
+```bash
+uv run python run.py examples/kitchen/input/before.mp4 examples/kitchen/input/after.mp4
+```
+
+### A failure case
+
+A 12 m hallway with identical white doors (recordings not included): VGGT misplaced cameras (jumps of 10 m between frames) and the change list was mostly door edges and frames. This failure is why the quality check exists: its thresholds were set between this run and the bedroom, and this run's measurements fail all four of them.
 
 ## Limitations
 
@@ -183,4 +206,5 @@ src/room_change/
   viz.py                   figures and Rerun recordings
 notebooks/vggt_colab.ipynb VGGT on a free Colab GPU
 examples/bedroom/          example input videos, answer key and full output
+examples/kitchen/          second example
 ```

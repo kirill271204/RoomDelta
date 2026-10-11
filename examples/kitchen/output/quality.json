@@ -1,0 +1,19 @@
+{
+  "verdict": "good",
+  "warnings": [],
+  "advice": null,
+  "metrics": {
+    "before": {
+      "transient_fraction": 0.03,
+      "unchanged_fraction": 0.882,
+      "largest_camera_jump_m": 1.44,
+      "median_camera_step_m": 0.23
+    },
+    "after": {
+      "transient_fraction": 0.031,
+      "unchanged_fraction": 0.863,
+      "largest_camera_jump_m": 0.92,
+      "median_camera_step_m": 0.18
+    }
+  }
+}

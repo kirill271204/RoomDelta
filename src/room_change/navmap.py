@@ -37,7 +37,12 @@ class Grid:
 
     def to_cell(self, xy) -> tuple[int, int]:
         c = np.floor((np.asarray(xy) - self.origin) / self.res).astype(int)
-        return int(c[1]), int(c[0])
+        r, col = int(c[1]), int(c[0])
+        h, w = self.cells.shape
+        if not (0 <= r < h and 0 <= col < w):
+            # A negative index would silently wrap to the other side of the map
+            raise ValueError(f"point {tuple(np.round(xy, 2))} is outside the map")
+        return r, col
 
     def to_world(self, rc) -> np.ndarray:
         rc = np.asarray(rc, float)
@@ -50,10 +55,15 @@ class Grid:
         return (x0, x0 + w * self.res, y0, y0 + h * self.res)
 
 
-def grid_bounds(clouds: list[np.ndarray], res: float, margin: float = 0.2):
+def grid_bounds(clouds: list[np.ndarray], res: float, margin: float = 0.2, include: np.ndarray | None = None):
+    """Map extent covering the clouds (outliers trimmed) and every point in include (x, y), plus a margin."""
     pts = np.concatenate([c[:, :2] for c in clouds])
-    lo = np.percentile(pts, 0.5, axis=0) - margin
-    hi = np.percentile(pts, 99.5, axis=0) + margin
+    lo = np.percentile(pts, 0.5, axis=0)
+    hi = np.percentile(pts, 99.5, axis=0)
+    if include is not None and len(include):
+        lo = np.minimum(lo, np.min(include, axis=0))
+        hi = np.maximum(hi, np.max(include, axis=0))
+    lo, hi = lo - margin, hi + margin
     shape = tuple(np.ceil((hi - lo)[::-1] / res).astype(int))
     return lo, shape
 
@@ -134,16 +144,21 @@ def astar(cost: np.ndarray, start: tuple[int, int], goal: tuple[int, int]):
     return None, np.inf
 
 
-def snap_to_free(cost: np.ndarray, cell: tuple[int, int], max_cells: int):
-    """Nearest cell the robot can occupy (finite cost) within max_cells, or None."""
-    if np.isfinite(cost[cell]):
+def snap_to_free(cost: np.ndarray, cell: tuple[int, int], max_cells: int, observed: np.ndarray | None = None):
+    """Nearest cell the robot can occupy (finite cost) within max_cells, or None.
+
+    observed: optional mask of cells seen to be free floor; the result must be one of them. A
+    recording's start point is often unobserved (the camera never sees the floor under the person).
+    """
+    ok_cell = np.isfinite(cost) if observed is None else np.isfinite(cost) & observed
+    if ok_cell[cell]:
         return cell
     r0, c0 = cell
     rr, cc = np.mgrid[max(0, r0 - max_cells):r0 + max_cells + 1, max(0, c0 - max_cells):c0 + max_cells + 1]
     rr, cc = rr.ravel(), cc.ravel()
     ok = (rr < cost.shape[0]) & (cc < cost.shape[1])
     rr, cc = rr[ok], cc[ok]
-    ok = np.isfinite(cost[rr, cc]) & ((rr - r0) ** 2 + (cc - c0) ** 2 <= max_cells ** 2)
+    ok = ok_cell[rr, cc] & ((rr - r0) ** 2 + (cc - c0) ** 2 <= max_cells ** 2)
     if not ok.any():
         return None
     d = (rr[ok] - r0) ** 2 + (cc[ok] - c0) ** 2

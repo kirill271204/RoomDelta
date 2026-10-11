@@ -246,7 +246,7 @@ def _plan(grid, start, goal, p):
     cost = cost_map(grid, p)
     ends = {}
     for name, xy in (("start", start), ("goal", goal)):
-        cell = snap_to_free(cost, grid.to_cell(xy), int(SNAP_M / grid.res))
+        cell = snap_to_free(cost, grid.to_cell(xy), int(SNAP_M / grid.res), observed=grid.cells == FREE)
         if cell is None:
             return {"reachable": False, "reason": f"no safe spot for the robot within {SNAP_M} m of the {name}"}
         ends[name] = cell
@@ -272,7 +272,9 @@ def step_navigation(scene: Scene, opt: Options, changes: list[dict], out_dir: Pa
 
     clouds = [scene.cloud(v)[0] for v in (0, 1)]
     floor_clouds = [scene.cloud(v, conf_pct=0)[0] for v in (0, 1)]  # all pixels, for floor evidence
-    origin, shape = grid_bounds(clouds, p.res)
+    # The map must contain the start and goal even where nothing was reconstructed around them
+    anchors = np.array([nav["start"]] + ([nav["goal"]] if "goal" in nav else []))
+    origin, shape = grid_bounds(clouds, p.res, include=anchors)
     before, after_only = (occupancy(c, origin, shape, p, floor_points=f) for c, f in zip(clouds, floor_clouds))
     updated = update(before, after_only)
 
@@ -286,7 +288,7 @@ def step_navigation(scene: Scene, opt: Options, changes: list[dict], out_dir: Pa
     # planning) but are not counted: they include space behind walls nobody has seen.
     for name, g in (("before", before), ("after", updated)):
         cost = cost_map(g, p)
-        start = snap_to_free(cost, g.to_cell(nav["start"]), int(SNAP_M / g.res))
+        start = snap_to_free(cost, g.to_cell(nav["start"]), int(SNAP_M / g.res), observed=g.cells == FREE)
         connected = reachable(cost, start) if start is not None else np.zeros(shape, bool)
         masks[f"reach_{name}"] = connected & (g.cells == FREE)
     # Floor that is still empty now but the robot can no longer get to (cut off by the new obstacles)
