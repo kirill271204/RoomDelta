@@ -1,0 +1,34 @@
+{
+  "start": [
+    0.0,
+    -0.0
+  ],
+  "start_name": "start of 1st recording",
+  "goal": [
+    0.3,
+    2.2
+  ],
+  "goal_name": "desk",
+  "robot_radius_m": 0.25,
+  "route_before": {
+    "reachable": true,
+    "length_m": 2.49,
+    "min_clearance_m": 0.25,
+    "unknown_cells_crossed": 0,
+    "start_moved_m": 0.02,
+    "goal_moved_m": 0.02
+  },
+  "route_after": {
+    "reachable": true,
+    "length_m": 2.41,
+    "min_clearance_m": 0.25,
+    "unknown_cells_crossed": 0,
+    "start_moved_m": 0.02,
+    "goal_moved_m": 0.02
+  },
+  "newly_blocked_floor_m2": 0.95,
+  "newly_free_floor_m2": 0.39,
+  "reachable_floor_before_m2": 2.43,
+  "reachable_floor_after_m2": 0.77,
+  "free_floor_cut_off_m2": 1.08
+}

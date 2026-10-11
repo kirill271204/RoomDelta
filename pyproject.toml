@@ -1,0 +1,30 @@
+[project]
+name = "room-change"
+version = "0.1.0"
+description = "3D change detection between two phone recordings of a room"
+authors = [
+    { name = "Kirill", email = "kkolot27@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=1.13.0",
+    "einops>=0.8.2",
+    "huggingface-hub>=2.2.0",
+    "matplotlib>=3.11.2",
+    "numpy>=2.4.6",
+    "open3d>=0.20.0",
+    "opencv-python>=5.0.0.93",
+    "pillow>=12.3.0",
+    "python-dotenv>=1.2.4",
+    "rerun-sdk>=0.38.1",
+    "safetensors>=0.8.0",
+    "scikit-learn>=1.9.1",
+    "scipy>=1.17.1",
+    "torch>=2.14.1",
+    "torchvision>=0.29.1",
+]
+
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"

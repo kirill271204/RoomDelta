@@ -1,0 +1,13 @@
+{
+  "before": "data/IMG_1763.MOV",
+  "after": "data/IMG_1765 2.MOV",
+  "reconstruction": "data/reconstructions/IMG_1763_vs_IMG_1765_colab_30f.npz",
+  "frames_per_video": 30,
+  "camera_height_m": 1.4,
+  "robot_radius_m": 0.25,
+  "goal": [
+    0.3,
+    2.2
+  ],
+  "goal_name": "desk"
+}

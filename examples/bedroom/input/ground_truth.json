@@ -1,0 +1,33 @@
+{
+  "scene": "bedroom_01",
+  "before": "IMG_1763",
+  "after": "IMG_1765",
+  "reference_lengths_m": {
+    "bed_length": 2.2
+  },
+  "changes": [
+    {
+      "object": "black office chair",
+      "type": "moved",
+      "from": "at the desk",
+      "to": "near the door"
+    },
+    {
+      "object": "blue chair",
+      "type": "moved",
+      "from": "at the desk",
+      "to": "middle of the room"
+    },
+    {
+      "object": "backpack",
+      "type": "added",
+      "to": "on the blue chair"
+    },
+    {
+      "object": "bin with white bag",
+      "type": "moved",
+      "from": "floor beside the shelf near the door",
+      "to": "on the bed"
+    }
+  ]
+}
