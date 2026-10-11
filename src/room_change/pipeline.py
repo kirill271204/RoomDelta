@@ -186,7 +186,7 @@ def _plan(grid, start, goal, p):
 
 def step_navigation(scene: Scene, opt: Options, changes: list[dict], out_dir: Path) -> dict:
     p = MapParams(robot_radius=opt.robot_radius_m)
-    # The robot starts where the first recording started (usually the doorway)
+    # The robot starts where the first recording started (typically the entrance)
     nav = {"start": scene.camera_centers()[scene.frames_of(0)[0], :2].round(2).tolist(),
            "start_name": "start of 1st recording"}
     if opt.goal is not None:

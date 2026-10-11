@@ -1,7 +1,7 @@
 """Decide which removed/added pairs are the same object that moved.
 
 Each object is described by DINOv2 features of several masked crops (background
-blanked out, so the desk or floor behind it does not count) and by its 3D size.
+blanked out, so the furniture or floor behind it does not count) and by its 3D size.
 Appearance similarity is the best agreement between any view of one object and
 any view of the other: a chair seen only from behind in the first video can still
 match the same chair seen from the side in the second. Pairs are chosen with an

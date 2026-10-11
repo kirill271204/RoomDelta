@@ -24,10 +24,10 @@ MODEL = "claude-opus-5-5"
 MAX_SIDE = 768  # px; enough detail for labelling, keeps requests small
 
 SYSTEM = (
-    "You are the perception module of a home robot. A 3D change detector compared two "
+    "You are the perception module of a mobile robot. A 3D change detector compared two "
     "recordings of the same room (BEFORE and AFTER) and found a region that changed. You see "
     "image crops of that region and its measured 3D geometry. Name the object precisely but "
-    "briefly, describe locations using visible room landmarks (desk, window, bed, door, shelf), "
+    "briefly, describe locations relative to visible landmarks (furniture, doors, windows, walls), "
     "and report only what the images support. State facts; do not recommend tidying actions. "
     "The 3D detector cannot separate objects that touch, so check the crops yourself: if an object "
     "is on, in or against the main object in one recording but absent in the other (for example a "
@@ -110,7 +110,7 @@ def summarize(client: anthropic.Anthropic, changes: list[dict]) -> str:
         model=MODEL, max_tokens=4096,  # the model thinks first; thinking counts toward max_tokens
         messages=[{"role": "user", "content": (
             "These changes were detected between two recordings of a room:\n" + "\n".join(lines)
-            + "\n\nWrite a 2 to 3 sentence summary for a home robot, ending with what matters for "
+            + "\n\nWrite a 2 to 3 sentence summary for a mobile robot, ending with what matters for "
               "navigating the room. Plain prose, no lists, no dashes.")}],
     )
     text = "".join(b.text for b in resp.content if b.type == "text").strip()

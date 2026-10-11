@@ -5,7 +5,7 @@ Usage:
 
 Examples:
     uv run python run.py data/IMG_1763.MOV "data/IMG_1765 2.MOV"
-    uv run python run.py before.mov after.mov --goal 0.3 2.2 --goal-name desk
+    uv run python run.py before.mov after.mov --goal 1.5 2.0 --goal-name kitchen
     uv run python run.py before.mov after.mov --reconstruction vggt_output.npz   # VGGT run elsewhere (Colab)
 
 Steps: sharpest frames -> VGGT 3D reconstruction of both videos together -> floor levelling and
