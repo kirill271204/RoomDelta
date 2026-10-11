@@ -138,8 +138,6 @@ Each example folder holds the two input videos, the answer key (`ground_truth.js
 | ADDED | dark navy backpack, now on the blue chair's seat | backpack added ✅ |
 | MOVED 2.06 m, 0.5 m higher | grey wastebasket, from the floor by the shelf to the top of the bed | bin moved ✅ |
 
-The geometry also flagged caps on a shelf seen from a new angle. The visual check rejected it ("the same caps show up on the shelf in both recordings, so they were there all along"), and it is listed under `rejected` instead of as a change.
-
 ![Changes found in the example](examples/bedroom/output/changes_topdown.png)
 
 For a robot starting at the door, the changes cut the floor it can reach from 2.4 m² to 0.8 m², while a route to the desk still exists:
@@ -152,8 +150,6 @@ To run it yourself:
 uv run python run.py examples/bedroom/input/before.mp4 examples/bedroom/input/after.mp4 --goal 0.3 2.2 --goal-name desk
 ```
 
-The shipped output was made from the full resolution recordings with a Colab reconstruction at 30 frames per video; the input videos here are smaller 720p copies of those. In an earlier test with only 15 frames per video (a 16 GB Mac), both chairs were still found but the bin on the bed was missed.
-
 ### Kitchen and dining area
 
 [`examples/kitchen/`](examples/kitchen/): a baby seat was moved to the kitchen counter, a vase of flowers along the dining table, and a small caddy with an oil bottle from the corner of the counter to its middle. All three are found and nothing else is reported:
@@ -164,8 +160,6 @@ The shipped output was made from the full resolution recordings with a Colab rec
 | MOVED 0.65 m | glass vase of white roses, from the wall end of the table toward its middle | flowers moved ✅ |
 | MOVED 0.50 m | dark wooden pepper mill, along the back of the kitchen counter | caddy with oil moved ✅ |
 
-Two things this scene needed that the bedroom did not. The caddy sits on a counter at the back, seen only from a distance, so it gives few 3D points and is kept by the strong evidence rule for small objects. The baby seat was split by occlusion into two clusters, and the leftover piece is merged into the move instead of being reported as a separate removal. Claude names the caddy by the pepper mill standing in it.
-
 ![Changes found in the kitchen example](examples/kitchen/output/changes_topdown.png)
 
 The input videos are the 1024 pixel, 15 fps copies that the Colab reconstruction was made from:
@@ -173,10 +167,6 @@ The input videos are the 1024 pixel, 15 fps copies that the Colab reconstruction
 ```bash
 uv run python run.py examples/kitchen/input/before.mp4 examples/kitchen/input/after.mp4
 ```
-
-### A failure case
-
-A 12 m hallway with identical white doors (recordings not included): VGGT misplaced cameras (jumps of 10 m between frames) and the change list was mostly door edges and frames. This failure is why the quality check exists: its thresholds were set between this run and the bedroom, and this run's measurements fail all four of them.
 
 ## Limitations
 
