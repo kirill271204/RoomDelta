@@ -354,6 +354,9 @@ def run(before: Path, after: Path, out_dir: Path, opt: Options) -> None:
         "before": str(before), "after": str(after), "reconstruction": str(npz),
         "frames_per_video": opt.frames_per_video, "camera_height_m": opt.camera_height_m,
         "robot_radius_m": opt.robot_radius_m, "goal": opt.goal, "goal_name": opt.goal_name}, indent=2) + "\n")
+    from .report import write_report
+
+    write_report(out_dir)
     print()
     print_quality(quality)
-    print(f"Done. Results in {out_dir}/ ; 3D views: uv run rerun {out_dir}/scene.rrd {out_dir}/changes.rrd")
+    print(f"Done. Open {out_dir}/report.html ; 3D views: uv run rerun {out_dir}/scene.rrd {out_dir}/changes.rrd")

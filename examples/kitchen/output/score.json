@@ -1,0 +1,41 @@
+{
+  "answer_key_changes": 3,
+  "detected_changes": 3,
+  "found": 3,
+  "missed": 0,
+  "false_alarms": 0,
+  "type_correct": 3,
+  "recall": 1.0,
+  "precision": 1.0,
+  "pairs": [
+    {
+      "answer": "baby seat",
+      "answer_type": "moved",
+      "change_id": "change01",
+      "detected": "grey baby high chair with teddy bear on tray",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "Baby high chair moved to kitchen cabinet/counter area"
+    },
+    {
+      "answer": "vase of flowers",
+      "answer_type": "moved",
+      "change_id": "change02",
+      "detected": "glass vase of white roses",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "Vase moved from wall end to centre of dining table"
+    },
+    {
+      "answer": "small caddy with an oil bottle",
+      "answer_type": "moved",
+      "change_id": "change03",
+      "detected": "dark wooden pepper mill",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "Caddy with oil bottle (named after pepper mill in it) moved along counter"
+    }
+  ],
+  "missed_changes": [],
+  "false_alarm_changes": []
+}

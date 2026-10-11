@@ -1,0 +1,50 @@
+{
+  "answer_key_changes": 4,
+  "detected_changes": 4,
+  "found": 4,
+  "missed": 0,
+  "false_alarms": 0,
+  "type_correct": 4,
+  "recall": 1.0,
+  "precision": 1.0,
+  "pairs": [
+    {
+      "answer": "black office chair",
+      "answer_type": "moved",
+      "change_id": "change01",
+      "detected": "dark purple gaming chair",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "office chair desk to near door"
+    },
+    {
+      "answer": "blue chair",
+      "answer_type": "moved",
+      "change_id": "change02",
+      "detected": "blue perforated chair",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "blue chair desk to open floor"
+    },
+    {
+      "answer": "backpack",
+      "answer_type": "added",
+      "change_id": "change02.1",
+      "detected": "dark navy backpack",
+      "detected_type": "added",
+      "type_correct": true,
+      "reason": "backpack added on blue chair"
+    },
+    {
+      "answer": "bin with white bag",
+      "answer_type": "moved",
+      "change_id": "change03",
+      "detected": "grey wastebasket with white plastic bag",
+      "detected_type": "moved",
+      "type_correct": true,
+      "reason": "bin with white bag shelf to bed"
+    }
+  ],
+  "missed_changes": [],
+  "false_alarm_changes": []
+}

@@ -75,6 +75,27 @@ TOOL = {
 }
 
 
+def make_client() -> anthropic.Anthropic:
+    """Reads ANTHROPIC_API_KEY. Keys not scoped to a workspace also need the workspace to bill."""
+    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+    return anthropic.Anthropic(default_headers={"anthropic-workspace-id": workspace} if workspace else None)
+
+
+def call_tool(client: anthropic.Anthropic, tool: dict, content, system: str | None = None) -> dict:
+    """One request that must end in a call to `tool`; returns the tool input."""
+    kwargs = {"system": system} if system else {}
+    resp = client.messages.create(
+        model=MODEL, max_tokens=4096, tools=[tool],
+        # Forcing a specific tool is not supported on this model; the prompt requires it instead
+        tool_choice={"type": "auto"},
+        messages=[{"role": "user", "content": content}], **kwargs,
+    )
+    for block in resp.content:
+        if block.type == "tool_use" and block.name == tool["name"]:
+            return block.input
+    raise RuntimeError(f"Claude did not call {tool['name']} (stop_reason={resp.stop_reason})")
+
+
 def _image_block(path: str) -> dict:
     im = Image.open(path).convert("RGB")
     im.thumbnail((MAX_SIDE, MAX_SIDE))
@@ -100,16 +121,10 @@ def describe_change(client: anthropic.Anthropic, change: dict) -> dict:
         content += [_image_block(p) for p in crops]
         content.append({"type": "text", "text": f"{side} recording: whole frame, region boxed in magenta"})
         content.append(_image_block(context))
-    resp = client.messages.create(
-        model=MODEL, max_tokens=4096, system=SYSTEM, tools=[TOOL],
-        # Forcing a specific tool is not supported on this model; the system prompt requires it instead
-        tool_choice={"type": "auto"},
-        messages=[{"role": "user", "content": content}],
-    )
-    for block in resp.content:
-        if block.type == "tool_use" and block.name == TOOL["name"]:
-            return block.input
-    raise RuntimeError(f"Claude did not call {TOOL['name']} for {change['id']} (stop_reason={resp.stop_reason})")
+    try:
+        return call_tool(client, TOOL, content, SYSTEM)
+    except RuntimeError as e:
+        raise RuntimeError(f"{change['id']}: {e}") from None
 
 
 def summarize(client: anthropic.Anthropic, changes: list[dict], quality: dict | None = None) -> str:
@@ -143,9 +158,7 @@ def _split(change: dict) -> tuple[dict, dict]:
 def describe_all(changes_json: Path, min_same_probability: float = 0.5) -> dict:
     """Describe and check every change in changes.json; returns the enriched record."""
     record = json.loads(changes_json.read_text())
-    # Reads ANTHROPIC_API_KEY. Keys not scoped to a workspace also need the workspace to bill.
-    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
-    client = anthropic.Anthropic(default_headers={"anthropic-workspace-id": workspace} if workspace else None)
+    client = make_client()
     out, rejected = [], []
 
     def keep(ch: dict, d: dict) -> None:

@@ -15,6 +15,8 @@ Changes are only reported where both recordings actually looked. Anything one re
 uv run python run.py before.mov after.mov
 ```
 
+Why it is built this way, what failed along the way and what I would do next: [DESIGN.md](DESIGN.md).
+
 ## Setup
 
 Tested on macOS (Apple Silicon) with Python 3.11. Linux should work the same way without the Homebrew step, but is untested.
@@ -72,6 +74,7 @@ A good way to choose `--goal`: run once without it, read the coordinates off `na
 
 | File | Contents |
 | :--- | :--- |
+| `report.html` | **Start here.** One page with the verdict, the summary, a card per change with before and after views, the figures and (after `evaluate.py`) the score. Self contained, so it can be sent as a single file |
 | `changes_described.json` | The confirmed changes with labels, descriptions and a summary for the robot, plus the detections the visual check `rejected` and why |
 | `quality.json` | Whether the 3D reconstruction can be trusted, with the measurements behind the verdict |
 | `changes.json` | The change list from geometry alone: type, position, size, distance moved, match scores |
@@ -81,8 +84,23 @@ A good way to choose `--goal`: run once without it, read the coordinates off `na
 | `changes.rrd`, `scene.rrd` | Interactive 3D views: `uv run rerun OUTPUT_DIR/changes.rrd` |
 | `objects/` | Crops of every changed object, before and after, plus a context frame |
 | `run_settings.json` | The settings used, for reproducing the run |
+| `score.json` | Written by `evaluate.py`: found, missed and false alarms against an answer key |
 
 Coordinates are in metres, with the floor at z = 0, z pointing up, and the start of the first recording near the origin.
+
+## Score a run
+
+To measure how well a run did, write down what you actually changed in an answer key:
+
+```json
+{"changes": [{"object": "baby seat", "type": "moved", "from": "the table", "to": "the kitchen counter"}]}
+```
+
+```bash
+uv run python evaluate.py OUTPUT_DIR answer_key.json
+```
+
+The answer key is in plain words while the output has labels and 3D positions, so Claude pairs each detected change with at most one answer key entry, and the script counts changes found, missed, false alarms, and whether moved, added or removed is right. The result goes to `score.json` and into `report.html`.
 
 ## How it works
 
@@ -125,7 +143,12 @@ uv run python run.py before.mov after.mov --reconstruction vggt_30f.npz
 
 ## Examples
 
-Each example folder holds the two input videos, the answer key (`ground_truth.json`) and the full output.
+Each example folder holds the two input videos, the answer key (`ground_truth.json`) and the full output, including `report.html` and `score.json`.
+
+| Example | Changes found | Missed | False alarms | Type correct | Report |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Bedroom | 4 of 4 | 0 | 0 | 4 of 4 | [open](https://kirill271204.github.io/RoomDelta/examples/bedroom/output/report.html) |
+| Kitchen and dining area | 3 of 3 | 0 | 0 | 3 of 3 | [open](https://kirill271204.github.io/RoomDelta/examples/kitchen/output/report.html) |
 
 ### Bedroom
 
@@ -180,6 +203,7 @@ uv run python run.py examples/kitchen/input/before.mp4 examples/kitchen/input/af
 
 ```
 run.py                     command line entry point
+evaluate.py                score a run against an answer key
 src/room_change/
   pipeline.py              the steps, in order
   frames.py                sharpest frame selection
@@ -194,6 +218,8 @@ src/room_change/
   describe.py              Claude labels, checks and descriptions
   navmap.py                occupancy maps, A*, reachable floor
   viz.py                   figures and Rerun recordings
+  report.py                the report.html results page
+  evaluate.py              pairing detections with an answer key
 notebooks/vggt_colab.ipynb VGGT on a free Colab GPU
 examples/bedroom/          example input videos, answer key and full output
 examples/kitchen/          second example
