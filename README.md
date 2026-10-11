@@ -1,6 +1,6 @@
-# What Changed in the Room?
+# RoomDelta
 
-A tool that compares two phone videos of the same indoor space and tells you what changed, in 3D.
+**What changed in the room?** A tool that compares two phone videos of the same indoor space and tells you what changed, in 3D.
 
 Record a space, move things around, record it again, and run one command. You get:
 
@@ -20,8 +20,8 @@ uv run python run.py before.mov after.mov
 Tested on macOS (Apple Silicon) with Python 3.11. Linux should work the same way without the Homebrew step, but is untested.
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USER/room-change.git
-cd room-change
+git clone https://github.com/kirill271204/RoomDelta.git
+cd RoomDelta
 brew install uv libusb          # macOS: uv manages Python, Open3D needs libusb
 uv sync                         # creates .venv with all Python packages
 git clone https://github.com/facebookresearch/vggt.git third_party/vggt
